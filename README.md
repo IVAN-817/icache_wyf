@@ -6,7 +6,6 @@
 
 
 ## **Introduction**
----
 本项目是针对Andes AX65 multi-core CPU (我们配置为8核)
 
 每个核都有一个自己的L1-Cache，共享同一个L2-Cache；本文只讨论L1-Cache
