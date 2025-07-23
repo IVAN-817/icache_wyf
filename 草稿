@@ -1,0 +1,58 @@
+`timescale 1ns/1ns
+
+module simple_fifo #(
+    parameter DATA_WIDTH = 32,
+    parameter DEPTH_BITS = 3
+)(
+    input                     clk,
+    input                     reset_n,
+    input                     wr_en,
+    input  [DATA_WIDTH-1:0]   wdata,
+    input                     rd_en,
+    output [DATA_WIDTH-1:0]   rdata,
+    output                    fifo_empty,
+    output                    fifo_full
+);
+
+    typedef logic [DATA_WIDTH-1:0] data_t;      //规定一个数据类型data_
+    data_t mem [*];  // SystemVerilog 关联数组，索引类型不
+
+    reg [DEPTH_BITS:0] wr_ptr;
+    reg [DEPTH_BITS:0] rd_ptr;
+
+    reg [DATA_WIDTH-1:0] rdata_reg;
+
+    wire [DEPTH_BITS:0] wr_ptr_next = wr_ptr + 1;
+    wire [DEPTH_BITS:0] rd_ptr_next = rd_ptr + 1;
+
+    always @(negedge reset_n or posedge clk) begin
+        if (~reset_n) begin
+            wr_ptr <= '0;
+        end else if (wr_en && (~fifo_full || rd_en)) begin
+            mem[wr_ptr[DEPTH_BITS-1:0]] <= wdata;
+            wr_ptr <= wr_ptr_next;
+        end
+    end
+
+    always @(negedge reset_n or posedge clk) begin
+        if (~reset_n) begin
+            rd_ptr <= '0;
+        end else if (rd_en && ~fifo_empty) begin
+            rd_ptr <= rd_ptr_next;
+        end
+    end
+
+    always @(posedge clk) begin
+        if (rd_en && ~fifo_empty) begin
+            rdata_reg <= mem[rd_ptr[DEPTH_BITS-1:0]];
+        end
+    end
+
+
+    assign rdata = rdata_reg;
+
+    assign fifo_empty = (rd_ptr == wr_ptr);
+    assign fifo_full  = (wr_ptr[DEPTH_BITS-1:0] == rd_ptr[DEPTH_BITS-1:0]) &&
+                        (wr_ptr[DEPTH_BITS] != rd_ptr[DEPTH_BITS]);
+
+endmodule
